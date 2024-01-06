@@ -15,20 +15,6 @@ app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024
 
 
-@app.route("/api/process-image-file", methods=["POST"])
-def process_raw_image():
-    if request.method == "POST":
-        if request.content_type == "application/json":
-            data = json.loads(request.data.decode("utf-8"))
-            file_name = data["file"]
-            result = process_image_controller(file_name)
-            return result
-        else:
-            return {"response": "not json structure"}
-    else:
-        return {"response": "not post structure"}
-
-
 @app.route("/api/process_image", methods=["POST"])
 def process_image():
     if request.method == "POST":
@@ -58,4 +44,4 @@ def convert_image2base64():
         return {"response": "not post structure"}
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5000,)
