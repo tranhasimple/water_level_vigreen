@@ -75,7 +75,7 @@ class ImageProcessor:
 
 import easyocr
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
-model_id = "weights/TrOCR_small_printer"
+model_id = "microsoft/trocr-small-printed"
 
 processor = TrOCRProcessor.from_pretrained(model_id)
 model = VisionEncoderDecoderModel.from_pretrained(model_id)
