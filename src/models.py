@@ -143,21 +143,34 @@ class RecognizationModel:
             cv2.rectangle(image_copy, pt1, pt2, color, thickness=2)
             label_position = (pt2[0], pt1[1] - 10)  # Vị trí label sẽ hiển thị, 10 pixel phía trên góc trên của hình chữ nhật
 
-            
-
             ocr_text = self.ocr_model.image2text(cropped_img_path)
+            text = str(f"water_level = {ocr_text}")
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            font_scale = 1
+            font_thickness = 2
+            text_color = (0, 255, 0)
+            text_color_bg = (255,255,255)
 
             # Hiển thị label trên ảnh
-            cv2.putText(image_copy, str(f"water_level = {ocr_text}"), label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, color=(0,0,255), thickness=1)
+            text_size, _ = cv2.getTextSize(text, font, font_scale,-1)
+            
+            print(text_size)
+            text_w, text_h = text_size
+            pos = (pt2[0],pt1[1] - text_h - 5)
+            x, y = pos
+            
+            cv2.putText(image_copy, text, (x, y + text_h + font_scale - 1), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color=text_color, thickness=font_thickness)
             cv2.imwrite(img=image_copy, filename=image_path)
             return {
                 "cropped_image": image_copy,
                 "water_level": ocr_text
             }
         except Exception as ex:
-        
             print("Exception ====> ", ex)
             return None
+        
+    def anotate_result(self,  img):
+        pass
 
     def detect_num(self, image_path):
         results = self.yolo_model.predict(image_path, save=False, imgsz=320, conf=0.4, save_crop=False)
