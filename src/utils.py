@@ -58,3 +58,34 @@ def compute_physical_area(num_pixels):
     GSD = config.get("camera", "GSD")
     area = float(num_pixels) * (float(GSD) * 0.01 / float(scale_factor)) ** 2
     return round(area, 2)
+
+#TODO: Xoay ảnh để vậy thể theo chiều thẳng
+def title_correct_image(path, export_path):
+    img = cv2.imread(path)
+    img_copy = img
+    # Convert the img to grayscale
+    gray = cv2.cvtColor(img_copy, cv2.COLOR_BGR2GRAY)
+
+    # Apply edge detection method on the image
+    edges = cv2.Canny(gray, 50, 150, apertureSize=3)
+
+    # This returns an array of r and theta values
+    lines = cv2.HoughLines(edges, 1, np.pi/180, 150)
+
+    # The below for loop runs till r and theta values
+    # are in the range of the 2d array
+
+    r_theta = lines[-1]
+    arr = np.array(r_theta[0], dtype=np.float64)
+    r, theta = arr
+
+    if theta > np.pi/2:
+        theta = - 180 + theta*180/np.pi
+    else:
+        theta = - theta*180/np.pi
+        
+    from scipy import ndimage
+
+    #rotation angle in degree
+    rotated = ndimage.rotate(img, theta)
+    cv2.imwrite(img = rotated, filename=export_path)
