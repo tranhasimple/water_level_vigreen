@@ -13,9 +13,7 @@ from src.utils import (
     compute_physical_area,
 )
 
-
 ROOT = Path(__file__).parents[1]
-
 
 class ImageProcessor:
     def __init__(self, image, export_file, cropped_image_path):
@@ -75,6 +73,8 @@ class ImageProcessor:
 
 import easyocr
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
+
+# TODO: Load OCR model
 model_id = "microsoft/trocr-small-printed"
 
 processor = TrOCRProcessor.from_pretrained(model_id)
