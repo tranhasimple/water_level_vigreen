@@ -51,6 +51,7 @@ def process_image_controller(base64_image):
             cropped_image_path = os.path.join(save_dir, cropped_path)
             image_processor = ImageProcessor(image=base64_image, export_file=image_path, cropped_image_path=cropped_image_path)
             result = image_processor.process_base64()
+
             if not result:
                 return {"success": False}
             return {
@@ -99,8 +100,6 @@ def process_regions_controller(base64_image):
             }
     else:
         return None
-
-
 def convert_image_controller(image_data):
     if image_data:
         base64img = image_to_base64(image_byte=image_data)

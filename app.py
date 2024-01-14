@@ -7,7 +7,6 @@ from html import unescape
 import requests
 import time
 
-
 from flask import Flask
 from src.controllers import process_image_controller
 
