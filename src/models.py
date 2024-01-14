@@ -12,7 +12,8 @@ from configparser import ConfigParser
 from src.utils import (
     base64_to_image,
     image_to_base64,
-    compute_physical_area,
+    convert_coordinates,
+    calculate_scale
 )
 
 config = ConfigParser()
@@ -122,8 +123,79 @@ class RecognizationModel:
         self.yolo_model = YOLO(self.weight_path)
         self.ocr_model = OCRModel()
 
-
     def recognize_water_level(self, image_path, cropped_img_path, gauge_img_path):
+        global h_num_real
+
+        try:
+            # get number object from image
+            gauges, _ = self.detect_num(image_path=image_path)
+            converted_gauges = self.xyxy2xywh(gauges)
+            x_g, y_g, w_g, h_g = converted_gauges[0]
+            image = Img.open(image_path)
+            width_original, height_original = image.size
+
+            image.crop((x_g - w_g/2, y_g - h_g/2,  x_g + w_g/2, y_g + h_g/2)).save(gauge_img_path)
+
+            _, nums = self.detect_num(image_path=gauge_img_path)
+            converted_nums = self.xyxy2xywh(nums)
+
+            lowest_num = self.choose_lowest_num(converted_nums)
+            x, y, w, h = lowest_num
+            
+            image_gauge_copy = Img.open(gauge_img_path)
+
+            # save cropped num to temp path
+            image_gauge_copy.crop((x - w/2, y - h/2,  x + w/2, y + h/2)).save(cropped_img_path)
+            
+            gauge_image = cv2.imread(gauge_img_path)
+            ocr_text = self.ocr_model.image2text(cropped_img_path)
+
+            # Preprocess gauge image
+            processed_gauge_img, y_wl = img_processing_water_surface_line(gauge_image)
+            diff_level = calculate_diff_level(y_num=y + h/2, y_wl=y_wl, h_num=h, h_num_real=h_num_real)
+
+            # calculate real water level
+            try:
+                real_water_level = ocr_text - diff_level
+            except:
+                real_water_level = "Can not find"
+
+            image_copy = cv2.imread(image_path)
+
+            # Định nghĩa các tham số cho hình chữ nhật
+            pt1 = (int(x - w/2), int(y - h/2))
+            pt2 = (int(x + w/2), int(y + h/2))  # Góc dưới bên phải
+            color = (0, 255, 0)  # Màu trong định dạng BGR
+
+            text = str(f"water_level = {real_water_level}")
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            font_scale = 1
+            font_thickness = 2
+            text_color = (0, 255, 0)
+            text_color_bg = (255,255,255)
+
+            # Hiển thị label trên ảnh
+            text_size, _ = cv2.getTextSize(text, font, font_scale,-1)
+            
+            print(text_size)
+            text_w, text_h = text_size
+            pos = (pt2[0],pt1[1] - text_h - 5)
+            x, y = pos
+            
+            cv2.putText(image_copy, text, (0, 0 + text_h + font_scale - 1), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color=text_color, thickness=font_thickness)
+            cv2.imwrite(img=image_copy, filename=image_path)
+            return {
+                "cropped_image": image_copy,
+                "water_level": real_water_level,
+                "y_num": y + h/2,
+                "h_num": h,
+                "diff_level": diff_level
+            }
+        except Exception as ex:
+            print("Exception ====> ", ex)
+            return None
+        
+    def recognize_water_level_old(self, image_path, cropped_img_path, gauge_img_path):
         global h_num_real
 
         try:
@@ -200,7 +272,7 @@ class RecognizationModel:
         pass
 
     def detect_num(self, image_path):
-        results = self.yolo_model.predict(image_path, save=True, imgsz=320, conf=0.4, save_crop=True)
+        results = self.yolo_model.predict(image_path, save=False, imgsz=320, conf=0.4, save_crop=False)
         num_cordinates = []
         gauge_cordinates = []
         for r in results:

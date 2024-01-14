@@ -89,3 +89,19 @@ def title_correct_image(path, export_path):
     #rotation angle in degree
     rotated = ndimage.rotate(img, theta)
     cv2.imwrite(img = rotated, filename=export_path)
+
+def convert_coordinates(x_cut, y_cut, scale_x, scale_y):
+
+    # Tính tọa độ trên ảnh gốc
+    x_original = x_cut * scale_x
+    y_original = y_cut * scale_y
+
+    return x_original, y_original
+
+def calculate_scale(width_original, height_original, width_cut, height_cut):
+    # Tính tỉ lệ giữa kích thước ảnh gốc và ảnh đã cắt
+    scale_x = width_original / width_cut
+    scale_y = height_original / height_cut
+
+    return scale_x, scale_y
+
