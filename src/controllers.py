@@ -107,4 +107,5 @@ def convert_image_controller(image_data):
 
 
 def load_image(image_file):
+    print(image_file)
     return image_file.read()

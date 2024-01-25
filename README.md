@@ -8,7 +8,7 @@ Dataset link [download link (Google Drive)](put data link).
 
 Downloading weights:
 
-- Download trained weight `best.pt` and move it into `./weights/`, which can be found in this [download link (Google Drive)](https://drive.google.com/drive/folders/1-LHIZRIpkV13lPjMF-niYhrDnQ4SIsuL).
+- Download trained weight `best.pt` and move it into `./weights/`, which can be found in this [download link (Google Drive)](https://drive.google.com/drive/u/3/folders/1IiS1thFMV7AQLNexlnUWqOvbcf5ymEhD).
 
 Model OCR:
 - Model id found in this [ copy model_id (Huggingface) ] (https://huggingface.co/microsoft/trocr-small-printed)

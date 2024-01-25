@@ -55,41 +55,18 @@ class ImageProcessor:
         }
         return result
 
-    def process_regions(self):
-        img = self.image
-        segmented_image = self.recognize_waterlevel_model.segment_multiple_areas(img)
-        if not segmented_image:
-            return None
-        cv2.imwrite(self.export_file, segmented_image["segmentation"])
-        result = {
-            "regions": segmented_image["regions"],
-        }
-        return result
 
-    def process_regions_base64(self):
-        img = base64_to_image(self.image)
-        segmented_image = self.segmentation_model.segment_multiple_areas(img)
-        if not segmented_image:
-            return None
-        segmented_image_base64 = image_to_base64(segmented_image["segmentation"])
-        result = {
-            "base64image": segmented_image_base64,
-            "regions": segmented_image["regions"],
-        }
-        return result
-
-import easyocr
+# import easyocr
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 
 # TODO: Load OCR model
-model_id = "microsoft/trocr-small-printed"
+model_id = "microsoft/trocr-base-printed"
 
 processor = TrOCRProcessor.from_pretrained(model_id)
 model = VisionEncoderDecoderModel.from_pretrained(model_id)
 
 class OCRModel():
     def __init__(self) -> None:
-        self.model = easyocr.Reader(['en'])
         self.processor = processor
         self.model = model
 
@@ -97,11 +74,16 @@ class OCRModel():
         image = Image.open(path)
         pixel_values = self.processor(images=image, return_tensors="pt").pixel_values
 
-        generated_ids = self.model.generate(pixel_values)
-        generated_text = self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+        generated_ids = self.model.generate(pixel_values, do_sample=False, max_new_tokens=10)
+        generated_text = self.processor.batch_decode(generated_ids, skip_special_tokens=True)
+        print("OCR: ", generated_text)
+
+        generated_text = generated_text[0]
 
         try:
-            return abs(int(generated_text))
+            res = abs(int(generated_text))
+            
+            return res
         except Exception as ex:
             
             print(ex)
@@ -129,7 +111,7 @@ class RecognizationModel:
         try:
             # get number object from image
             gauges, _ = self.detect_num(image_path=image_path)
-            converted_gauges = self.xyxy2xywh(gauges)
+            converted_gauges = gauges
             x_g, y_g, w_g, h_g = converted_gauges[0]
             image = Img.open(image_path)
             width_original, height_original = image.size
@@ -137,7 +119,7 @@ class RecognizationModel:
             image.crop((x_g - w_g/2, y_g - h_g/2,  x_g + w_g/2, y_g + h_g/2)).save(gauge_img_path)
 
             _, nums = self.detect_num(image_path=gauge_img_path)
-            converted_nums = self.xyxy2xywh(nums)
+            converted_nums = nums
 
             lowest_num = self.choose_lowest_num(converted_nums)
             x, y, w, h = lowest_num
@@ -149,10 +131,14 @@ class RecognizationModel:
             
             gauge_image = cv2.imread(gauge_img_path)
             ocr_text = self.ocr_model.image2text(cropped_img_path)
+            cropped_image = gauge_image[int(y - h/2): int(y + h/2), int(x - w/2):int(x + w/2)]
 
             # Preprocess gauge image
             processed_gauge_img, y_wl = img_processing_water_surface_line(gauge_image)
-            diff_level = calculate_diff_level(y_num=y + h/2, y_wl=y_wl, h_num=h, h_num_real=h_num_real)
+            # NOTE: Test thử
+            # cv2.imwrite(img=processed_gauge_img[int(y - h/2):int(y + h/2)], filename="temp2.jpg")
+            h_num = self.edge_detection(original_image=cropped_image, low_threshold=50, high_threshold=150)
+            diff_level = calculate_diff_level(y_num=y + h/2, y_wl=y_wl, h_num=h_num, h_num_real=h_num_real)
 
             # calculate real water level
             try:
@@ -195,6 +181,24 @@ class RecognizationModel:
             print("Exception ====> ", ex)
             return None
         
+    def edge_detection(self, original_image, low_threshold, high_threshold):
+        original_image =  cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY) 
+
+        blurred_image = cv2.GaussianBlur(original_image, (5, 5), 0)
+
+        edges = cv2.Canny(blurred_image, low_threshold, high_threshold)
+        whites = []
+        for i, e in enumerate(edges):
+            if sum(e) > 500:
+                whites.append(i)
+        if len(whites) > 1:
+            h = whites[-1] - whites[0]
+        elif len(whites) == 0:
+            h = len(edges) - whites[0]
+        else:
+            h = len(edges)
+        return h  
+          
     def recognize_water_level_old(self, image_path, cropped_img_path, gauge_img_path):
         global h_num_real
 
@@ -272,16 +276,16 @@ class RecognizationModel:
         pass
 
     def detect_num(self, image_path):
-        results = self.yolo_model.predict(image_path, save=False, imgsz=320, conf=0.4, save_crop=False)
+        results = self.yolo_model.predict(image_path, save=True, imgsz=320, conf=0.4, save_crop=True)
         num_cordinates = []
         gauge_cordinates = []
         for r in results:
             for box in r.boxes:
                 cls = box.cls
-                if int(cls) == 1:
-                    num_cordinates.append([float(x) for x in box.xyxy[0]])
+                if int(cls) == 2:
+                    num_cordinates.append([float(x) for x in box.xywh[0]])
                 if int(cls) == 0:
-                    gauge_cordinates.append([float(x) for x in box.xyxy[0]])
+                    gauge_cordinates.append([float(x) for x in box.xywh[0]])
 
         return np.array(gauge_cordinates), np.array(num_cordinates)
     
@@ -381,15 +385,16 @@ def img_processing_water_surface_line(gauge_image):
     grayscaled = cv2.cvtColor(tilted_img, cv2.COLOR_BGR2GRAY)
     _, binary_image = cv2.threshold(grayscaled, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     blurred_image = cv2.GaussianBlur(binary_image, (5, 5),0)
+    cv2.imwrite(img=blurred_image, filename="temp.jpg")
 
     horizontal_projection_result = horizontal_projection(blurred_image)
+    threshold = 255*blurred_image.shape[1]*0.1
 
     # tìm water_surface_line theo 
-    water_surface_line = find_water_surface_line(projection_curve=horizontal_projection_result, consecutive_times=10, threshold=3100)
+    water_surface_line = find_water_surface_line(projection_curve=horizontal_projection_result, consecutive_times=20, threshold=0)
     return blurred_image, water_surface_line
 
 def calculate_diff_level(y_num, y_wl, h_num, h_num_real):
-    print(type(y_num), type(y_wl), type(h_num), type(h_num_real))
-    print(type(abs(y_wl - y_num)))
+    print(abs(y_wl - y_num))
     result = h_num_real * abs(y_wl - y_num) / h_num
     return result
