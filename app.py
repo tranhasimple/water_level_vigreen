@@ -14,7 +14,7 @@ app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024
 
 
-@app.route("/api/process_image", methods=["POST"])
+@app.route("/api/water-level-process-base64", methods=["POST"])
 def process_image():
     if request.method == "POST":
         if request.content_type == "application/json":
@@ -28,7 +28,7 @@ def process_image():
     else:
         return {"response": "not post structure"}
 
-@app.route("/api/convert_image", methods=["POST"])
+@app.route("/api/convert-image", methods=["POST"])
 def convert_image2base64():
     if request.method == "POST":
         if "multipart/form-data" in request.content_type:

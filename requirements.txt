@@ -1,3 +1,4 @@
 Pillow
 flask
 flask_cors
+sentencepiece

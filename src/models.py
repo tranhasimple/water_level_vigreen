@@ -15,6 +15,7 @@ from src.utils import (
     convert_coordinates,
     calculate_scale
 )
+import easyocr
 
 config = ConfigParser()
 config.read("config.ini")
@@ -62,7 +63,7 @@ from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 # TODO: Load OCR model
 model_id = "microsoft/trocr-base-printed"
 
-processor = TrOCRProcessor.from_pretrained(model_id)
+processor = TrOCRProcessor.from_pretrained(model_id, use_fast=False)
 model = VisionEncoderDecoderModel.from_pretrained(model_id)
 
 class OCRModel():
@@ -95,9 +96,9 @@ class OCRModel():
         try:
             return int(result[0][1])
         except Exception as ex:
-            
             print(ex)
             return result
+
 
 class RecognizationModel:
     def __init__(self, weight_path="weights/best.pt"):
@@ -293,13 +294,13 @@ class RecognizationModel:
         min_y = nums[0][1]
         min_num = nums[0]
 
-        if len(nums)>1:
+        if len(nums) > 1:
             for cor in nums[1:]:
                 if cor[1] > min_y:
                     min_y = cor[1]
                     min_num = cor
         return min_num
-    
+
     def xyxy2xywh(self, x):
         # Convert nx4 boxes from [x1, y1, x2, y2] to [x, y, w, h] where xy1=top-left, xy2=bottom-right
         y = x.clone() if isinstance(x, torch.Tensor) else np.copy(x)
