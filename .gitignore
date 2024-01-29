@@ -4,3 +4,7 @@ runs/
 uploads/
 
 weights/
+
+src/__pycache__/
+
+scaleResult/

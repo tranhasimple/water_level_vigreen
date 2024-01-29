@@ -236,7 +236,7 @@ class Results(SimpleClass):
                 im_gpu = torch.as_tensor(img, dtype=torch.float16, device=pred_masks.data.device).permute(
                     2, 0, 1).flip(0).contiguous() / 255
             idx = pred_boxes.cls if pred_boxes else range(len(pred_masks))
-            annotator.masks(pred_masks.data, colors=[colors(x, True) for x in idx], im_gpu=im_gpu)
+            annotator.masks(pred_masks.data, colors=[[0,191,255]], im_gpu=im_gpu)
 
         # Plot Detect results
         if pred_boxes and show_boxes:

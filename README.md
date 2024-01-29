@@ -1,21 +1,18 @@
-# Water level measurement
+# Flood Segmentation
 
 ### Dataset
-Dataset link [download link (Google Drive)](put data link).
+Dataset link [download link (Google Drive)](https://drive.google.com/drive/folders/1jY72M3wW6hVrtNanXG_k-NKuKpEt_p0A?usp=sharing).
 
 
 ### Weights
 
 Downloading weights:
 
-- Download trained weight `best.pt` and move it into `./weights/`, which can be found in this [download link (Google Drive)](https://drive.google.com/drive/u/3/folders/1IiS1thFMV7AQLNexlnUWqOvbcf5ymEhD).
-
-Model OCR:
-- Model id found in this [ copy model_id (Huggingface) ] (https://huggingface.co/microsoft/trocr-small-printed)
+- Download trained weight and move it into `./weights/`, which can be found in this [download link (Google Drive)](https://drive.google.com/file/d/1-fciOovNtRASXkryfJrMejCSQyuQLd45/view?usp=sharing).
 
 ### Mô tả APIs
-- `/api/process_image`: Nhận dữ liệu đầu vào là ảnh dạng base64, kết quả trả về là ảnh đã được detect vị trí của số chỉ định mực nước và số mực nước.
+- `/api/process_image`: Nhận dữ liệu đầu vào là ảnh dạng base64, kết quả trả về là ảnh đã được segmented và chuyển thành dạng base64
 
-### Chỉnh sửa phù hợp với loại thước
-- Thay đổi giá trị `h_num_real` trong file `config.ini` bằng độ cao của số tương ứng với đơn vị đo thực tế
-- Ví dụ: h_num_real = 1.5 tương ứng với 1 số trong thực tế có độ cao bằng 1.5 (đơn vị đo)
+- `/api/compute_pixels`: Nhận dữ liệu đầu vào là ảnh dạng base64, kết quả trả về là số lượng pixels được segmented là nước
+
+- `/api/convert_image`: Nhận dữ liệu đầu vào là ảnh được upload lên, kết quả trả về là ảnh đầu vào chuyển thành dạng base64
